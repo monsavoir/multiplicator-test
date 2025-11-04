@@ -32,23 +32,18 @@ export default function Operation(): JSX.Element {
 
     if (isCorrect) {
       setScore((prev) => prev + 1);
-      // reset timer when correct
       setSecondsLeft(5);
     } else {
-      setWrongAttempts((prev) => prev + 1); // increment wrong attempts to trigger shake
+      setWrongAttempts((prev) => prev + 1);
 
-      // compute new lives and update. Use explicit value so we can react immediately
       const newLives = Math.max(0, lives - 1);
       setLives(newLives);
       if (newLives === 0) {
         setGameOver(true);
       } else {
-        // keep focus on the input after the remount/animation starts
-        // small timeout lets the DOM update and animation begin
         setTimeout(() => {
           if (inputRef.current) inputRef.current.focus();
         }, 50);
-        // reset timer for the next attempt/question
         setSecondsLeft(5);
       }
     }
@@ -56,13 +51,11 @@ export default function Operation(): JSX.Element {
     setAnswer("");
 
     if (isCorrect && !gameOver) {
-      setTimeout(() => {
-        setA(() => Math.floor(Math.random() * 10));
-        setB(() => Math.floor(Math.random() * 10));
-        setFeedback(null);
-        setSecondsLeft(5);
-        if (inputRef.current) inputRef.current.focus();
-      }, 700);
+      setA(() => Math.floor(Math.random() * 10));
+      setB(() => Math.floor(Math.random() * 10));
+      setFeedback(null);
+      setSecondsLeft(5);
+      if (inputRef.current) inputRef.current.focus();
     }
   }
 
@@ -73,11 +66,8 @@ export default function Operation(): JSX.Element {
     const interval = setInterval(() => {
       setSecondsLeft((s) => {
         if (s <= 1) {
-          // avoid double-handling the same timeout (can happen in StrictMode/dev)
           if (timeoutRef.current) return 5;
           timeoutRef.current = true;
-          // time's up: treat as wrong answer
-          // increment wrongAttempts, lose a life, show feedback, then next question
           setWrongAttempts((w) => w + 1);
           setFeedback(false);
           setAnswer("");
@@ -87,18 +77,16 @@ export default function Operation(): JSX.Element {
             return newLives;
           });
 
-          // generate next question after brief delay so user sees feedback
           setTimeout(() => {
             setA(() => Math.floor(Math.random() * 10));
             setB(() => Math.floor(Math.random() * 10));
             setFeedback(null);
             setSecondsLeft(5);
             if (inputRef.current) inputRef.current.focus();
-            // allow future timeouts to be processed
             timeoutRef.current = false;
           }, 700);
 
-          return 5; // reset timer (will be set to 5 for next question)
+          return 5;
         }
 
         return s - 1;
