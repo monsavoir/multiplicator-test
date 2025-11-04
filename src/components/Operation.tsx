@@ -1,9 +1,9 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type FormEvent, type KeyboardEvent, type ChangeEvent, type JSX } from "react";
 import "./Operation.css";
 
-export default function Operation() {
+export default function Operation(): JSX.Element {
   const [answer, setAnswer] = useState("");
-  const [feedback, setFeedback] = useState(null);
+  const [feedback, setFeedback] = useState<boolean | null>(null);
   const [wrongAttempts, setWrongAttempts] = useState(0);
   const [lives, setLives] = useState(3);
   const [score, setScore] = useState(0);
@@ -13,10 +13,10 @@ export default function Operation() {
   const [a, setA] = useState(() => Math.floor(Math.random() * 10));
   const [b, setB] = useState(() => Math.floor(Math.random() * 10));
   const correct = a * b;
-  const inputRef = useRef(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const timeoutRef = useRef(false);
 
-  function handleSubmit(event) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const value = answer.trim();
     if (value === "") {
@@ -201,12 +201,12 @@ export default function Operation() {
             key={`input-${wrongAttempts}`}
             name="answer"
             value={answer}
-            onChange={(e) => setAnswer(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => setAnswer(e.target.value)}
             ref={inputRef}
-            onKeyDown={(e) => {
+            onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
               if (e.key === "Enter") {
                 e.preventDefault();
-                handleSubmit(e);
+                handleSubmit(e as any as FormEvent<HTMLFormElement>);
               }
             }}
             inputMode="numeric"

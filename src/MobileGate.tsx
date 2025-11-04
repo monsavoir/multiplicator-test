@@ -1,4 +1,4 @@
-import React, { useEffect, useState, type JSX } from 'react'
+import { useEffect, useState, type JSX } from 'react'
 import App from './App'
 
 function detectMobile(): boolean {
