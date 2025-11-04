@@ -130,7 +130,7 @@ export default function Operation(): JSX.Element {
                   <img
                     src="heart.png"
                     alt="heart"
-                    style={{ width: "24px", height: "24px" }}
+                    style={{ width: "20px", height: "20px" }}
                   />
                 </span>
               ))}
