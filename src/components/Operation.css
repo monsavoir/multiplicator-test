@@ -32,7 +32,8 @@
   border-radius: 999px;
   overflow: hidden;
   width: 100%;
-  margin-bottom: 12px;
+  position: relative;
+  z-index: 1;
 }
 .timer-fill {
   height: 100%;
@@ -44,9 +45,69 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  width: 100%;
+  margin-bottom: 12px;
+  position: relative;
 }
 .timer-text {
   font-size: 14px;
   min-width: 48px;
   text-align: right;
+}
+
+/* Hearts container wrapper (added via inline styles) */
+.hearts-wrapper {
+  display: flex;
+  gap: 8px;
+  position: relative;
+  z-index: 2; /* above timer */
+}
+
+/* ===== Survie Mode Layout Enhancements ===== */
+.survie-panel {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.survie-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.lives-list {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.lives-list img {
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25));
+}
+
+.score-box {
+  font-size: 16px;
+  font-weight: 600;
+  background: linear-gradient(90deg,#9eb2e6,#bec4d5);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.timer-bar {
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05);
+}
+
+.timer-fill {
+  background: linear-gradient(90deg, #3b82f6, #2563eb);
+}
+
+.timer-fill.warn-2 {
+  background: linear-gradient(90deg,#f59e0b,#d97706);
+}
+.timer-fill.warn-1 {
+  background: linear-gradient(90deg,#ef4444,#dc2626);
 }

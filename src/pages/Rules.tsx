@@ -11,7 +11,7 @@ export default function Rules({ gameMode }: RulesProps): JSX.Element {
 
   return (
     <div className="flex flex-col justify-between">
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto">
         {!play && (
           <div className="flex flex-col gap-4">
             {gameMode === "classic" && (

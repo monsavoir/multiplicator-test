@@ -5,8 +5,8 @@ import {
   type FormEvent,
   type KeyboardEvent,
   type ChangeEvent,
-  type JSX,
 } from "react";
+import type { JSX } from "react";
 import "./Operation.css";
 import Confetti from "./Confetti";
 import type { GameMode } from "../types/GameMode";
@@ -30,10 +30,10 @@ export default function Operation({ gameMode }: OperationProps): JSX.Element {
   const [lives, setLives] = useState(3);
   const [score, setScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
-  const [secondsLeft, setSecondsLeft] = useState(5);
+  const [roundTime, setRoundTime] = useState(5);
+  const [secondsLeft, setSecondsLeft] = useState(roundTime);
   const [timeNow, setTimeNow] = useState(Date.now());
 
-  // Function to generate all possible pairs and shuffle them
   function generatePairs() {
     const pairs: Array<[number, number]> = [];
     for (let i = 2; i <= 9; i++) {
@@ -41,12 +41,9 @@ export default function Operation({ gameMode }: OperationProps): JSX.Element {
         pairs.push([i, j]);
       }
     }
-    console.log("Generated pairs:", pairs);
-    console.log(pairs.length);
     return shuffleArray(pairs);
   }
 
-  // Fisher-Yates shuffle algorithm
   function shuffleArray<T>(array: T[]): T[] {
     const shuffled = [...array];
     for (let i = shuffled.length - 1; i > 0; i--) {
@@ -57,12 +54,7 @@ export default function Operation({ gameMode }: OperationProps): JSX.Element {
   }
 
   const [remainingPairs, setRemainingPairs] = useState<Array<[number, number]>>(
-    () => {
-      if (isClassicMode(gameMode)) {
-        return generatePairs();
-      }
-      return [];
-    }
+    () => (isClassicMode(gameMode) ? generatePairs() : [])
   );
 
   const [a, setA] = useState(() => {
@@ -71,7 +63,6 @@ export default function Operation({ gameMode }: OperationProps): JSX.Element {
     }
     return isSurvieMode(gameMode) ? Math.floor(Math.random() * 8) + 2 : 0;
   });
-
   const [b, setB] = useState(() => {
     if (isClassicMode(gameMode) && remainingPairs.length > 0) {
       return remainingPairs[0][1];
@@ -80,77 +71,74 @@ export default function Operation({ gameMode }: OperationProps): JSX.Element {
   });
 
   const correct = a * b;
-
   const inputRef = useRef<HTMLInputElement>(null);
   const timeoutRef = useRef(false);
+
+  function computeRoundTime(s: number): number {
+    if (s >= 20) return 2;
+    if (s >= 10) return 3;
+    if (s >= 5) return 4;
+    return 5;
+  }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const value = answer.trim();
-    if (value === "") {
-      return;
-    }
+    if (!value) return;
     const num = Number(value);
-    if (Number.isNaN(num)) {
-      return;
-    }
+    if (Number.isNaN(num)) return;
 
     const isCorrect = num === correct;
     setFeedback(isCorrect);
 
     if (isCorrect) {
-      setScore((prev) => prev + 1);
       if (isSurvieMode(gameMode)) {
-        setSecondsLeft(5);
+        setScore((prev: number) => {
+          const newScore = prev + 1;
+          const newTime = computeRoundTime(newScore);
+          setRoundTime(newTime);
+          setSecondsLeft(newTime);
+          return newScore;
+        });
+      } else {
+        setScore((prev: number) => prev + 1);
       }
-    } else {
-      if (isSurvieMode(gameMode)) {
-        setWrongAttempts((prev) => prev + 1);
-        const newLives = Math.max(0, lives - 1);
-        setLives(newLives);
-        if (newLives === 0) {
-          setGameOver(true);
-        }
-        setSecondsLeft(5);
-      }
-      // Reset focus regardless of mode
-      setTimeout(() => {
-        if (inputRef.current) inputRef.current.focus();
-      }, 50);
+    } else if (isSurvieMode(gameMode)) {
+      setWrongAttempts((prev) => prev + 1);
+      setLives((prev) => {
+        const newLives = Math.max(0, prev - 1);
+        if (newLives === 0) setGameOver(true);
+        return newLives;
+      });
+      setSecondsLeft(roundTime);
     }
 
     setAnswer("");
 
     if (isCorrect && !gameOver) {
       if (isClassicMode(gameMode)) {
-        // Remove the current pair and get the next one
         const newPairs = remainingPairs.slice(1);
         setRemainingPairs(newPairs);
-
-        // If we've used all pairs, game is complete
         if (newPairs.length === 0) {
           setGameOver(true);
           return;
         }
-
-        // Set the next pair
         setA(newPairs[0][0]);
         setB(newPairs[0][1]);
       } else {
-        // Survival mode random numbers
-        setA(() => Math.floor(Math.random() * 8) + 2);
-        setB(() => Math.floor(Math.random() * 8) + 2);
+        setA(Math.floor(Math.random() * 8) + 2);
+        setB(Math.floor(Math.random() * 8) + 2);
       }
       setFeedback(null);
-      setSecondsLeft(5);
+      if (isSurvieMode(gameMode)) setSecondsLeft(roundTime);
       if (inputRef.current) inputRef.current.focus();
+    } else {
+      setTimeout(() => inputRef.current?.focus(), 50);
     }
   }
 
-  // handle countdown timer
   useEffect(() => {
-    if (gameOver || gameMode !== "survie") return;
-
+    if (gameOver || !isSurvieMode(gameMode)) return;
     const interval = setInterval(() => {
       setSecondsLeft((s) => {
         if (s <= 1) {
@@ -158,98 +146,80 @@ export default function Operation({ gameMode }: OperationProps): JSX.Element {
           timeoutRef.current = true;
           setFeedback(false);
           setAnswer("");
-
-          if (isSurvieMode(gameMode)) {
-            setWrongAttempts((w) => w + 1);
-            setLives((prev) => {
-              const newLives = Math.max(0, prev - 1);
-              if (newLives === 0) setGameOver(true);
-              return newLives;
-            });
-          }
-
+          setWrongAttempts((w) => w + 1);
+          setLives((prev) => {
+            const newLives = Math.max(0, prev - 1);
+            if (newLives === 0) setGameOver(true);
+            return newLives;
+          });
           setTimeout(() => {
-            if (isClassicMode(gameMode)) {
-              const newPairs = remainingPairs.slice(1);
-              setRemainingPairs(newPairs);
-
-              if (newPairs.length === 0) {
-                setGameOver(true);
-                return;
-              }
-
-              setA(newPairs[0][0]);
-              setB(newPairs[0][1]);
-            } else {
-              setA(() => Math.floor(Math.random() * 8) + 2);
-              setB(() => Math.floor(Math.random() * 8) + 2);
-            }
+            setA(Math.floor(Math.random() * 8) + 2);
+            setB(Math.floor(Math.random() * 8) + 2);
             setFeedback(null);
-            setSecondsLeft(5);
-            if (inputRef.current) inputRef.current.focus();
+            setSecondsLeft(roundTime);
+            inputRef.current?.focus();
             timeoutRef.current = false;
-          }, 700);
-
-          return 5;
+          }, 600);
+          return roundTime;
         }
-
         return s - 1;
       });
     }, 1000);
-
     return () => clearInterval(interval);
-  }, [gameOver]);
+  }, [gameOver, gameMode, roundTime]);
 
   return (
     <>
-      {!gameOver && (
-        <>
-          <div
-            style={{
-              display: "flex",
-              gap: 8,
-              marginBottom: 16,
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            {isSurvieMode(gameMode) && (
-              <>
-                <div className="timer-row">
-                  <div className="timer-bar" aria-hidden>
-                    <div
-                      className="timer-fill"
-                      style={{ width: `${(secondsLeft / 5) * 100}%` }}
-                    />
-                  </div>
-                </div>
-                <div style={{ display: "flex", gap: 8 }}>
-                  {[...Array(3 - wrongAttempts)].map((_, i) => (
-                    <span
-                      key={i}
-                      style={{
-                        color: i < lives ? "red" : "#ccc",
-                        fontSize: "24px",
-                      }}
-                    >
-                      <img
-                        src="heart.png"
-                        alt="heart"
-                        style={{ width: "20px", height: "20px" }}
-                      />
-                    </span>
-                  ))}
-                </div>
-              </>
-            )}
-            <div style={{ fontSize: 18 }}>
-              {isClassicMode(gameMode)
-                ? `Restant: ${score}/${remainingPairs.length + score}`
-                : `Score: ${score}`}
+      {!gameOver &&
+        (isSurvieMode(gameMode) ? (
+          <div className="survie-panel" aria-label="Statut mode survie">
+            <div
+              className="timer-row"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={roundTime}
+              aria-valuenow={secondsLeft}
+              aria-label={`Temps restant: ${secondsLeft} secondes`}
+            >
+              <div className="timer-bar">
+                <div
+                  className={`timer-fill ${
+                    secondsLeft <= 1
+                      ? "warn-1"
+                      : secondsLeft <= 2
+                      ? "warn-2"
+                      : ""
+                  }`}
+                  style={{ width: `${(secondsLeft / roundTime) * 100}%` }}
+                />
+              </div>
+            </div>
+            <div className="survie-header">
+              <div
+                className="lives-list"
+                aria-label={`Vies restantes: ${lives}`}
+              >
+                {[...Array(lives)].map((_, i) => (
+                  <img
+                    key={i}
+                    src="heart.png"
+                    alt="vie"
+                    width={22}
+                    height={22}
+                    style={{ opacity: 0.95 }}
+                  />
+                ))}
+              </div>
+              <div className="score-box" aria-label={`Score actuel ${score}`}>
+                Score: {score}
+              </div>
             </div>
           </div>
-        </>
-      )}
+        ) : (
+          <div style={{ marginBottom: 20, fontSize: 16, fontWeight: 600 }}>
+            Progression: {score}/{remainingPairs.length + score}
+          </div>
+        ))}
 
       {gameOver ? (
         <div
@@ -278,7 +248,6 @@ export default function Operation({ gameMode }: OperationProps): JSX.Element {
               <p>Score Final: {score}</p>
             </>
           )}
-
           <button
             onClick={() => {
               setLives(3);
@@ -287,7 +256,6 @@ export default function Operation({ gameMode }: OperationProps): JSX.Element {
               setGameOver(false);
               setFeedback(null);
               setTimeNow(Date.now());
-
               if (isClassicMode(gameMode)) {
                 const newPairs = generatePairs();
                 setRemainingPairs(newPairs);
@@ -312,9 +280,7 @@ export default function Operation({ gameMode }: OperationProps): JSX.Element {
             Rejouer
           </button>
           <button
-            onClick={() => {
-              window.location.reload();
-            }}
+            onClick={() => window.location.reload()}
             style={{
               padding: "8px 16px",
               fontSize: "16px",
@@ -330,49 +296,46 @@ export default function Operation({ gameMode }: OperationProps): JSX.Element {
           </button>
         </div>
       ) : (
-        <div>
-          <form
-            onSubmit={handleSubmit}
-            style={{ display: "flex", gap: 8, alignItems: "center" }}
-          >
-            <span style={{ fontSize: 18 }}>
-              {a} × {b} =
-            </span>
-
-            <input
-              key={`input-${wrongAttempts}`}
-              name="answer"
-              value={answer}
-              onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                setAnswer(e.target.value)
+        <form
+          onSubmit={handleSubmit}
+          style={{ display: "flex", gap: 8, alignItems: "center" }}
+        >
+          <span style={{ fontSize: 18 }}>
+            {a} × {b} =
+          </span>
+          <input
+            key={`input-${wrongAttempts}`}
+            name="answer"
+            value={answer}
+            onChange={(e: ChangeEvent<HTMLInputElement>) =>
+              setAnswer(e.target.value)
+            }
+            ref={inputRef}
+            onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleSubmit(e as any as FormEvent<HTMLFormElement>);
               }
-              ref={inputRef}
-              onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleSubmit(e as any as FormEvent<HTMLFormElement>);
-                }
-              }}
-              inputMode="numeric"
-              type="tel"
-              pattern="[0-9]*"
-              aria-label={`Answer for ${a} times ${b}`}
-              className={
-                gameMode === "survie" && feedback === false ? "input-shake" : ""
-              }
-              style={{
-                padding: "6px 8px",
-                fontSize: 16,
-                width: 100,
-                marginLeft: 12,
-                border: `1px solid ${feedback === false ? "#ff6b6b" : "#ccc"}`,
-                borderRadius: "4px",
-                outline: "none",
-                transition: "border-color 0.2s ease-in-out",
-              }}
-            />
-          </form>
-        </div>
+            }}
+            inputMode="numeric"
+            type="tel"
+            pattern="[0-9]*"
+            aria-label={`Réponse pour ${a} fois ${b}`}
+            className={
+              isSurvieMode(gameMode) && feedback === false ? "input-shake" : ""
+            }
+            style={{
+              padding: "6px 8px",
+              fontSize: 16,
+              width: 60,
+              marginLeft: 12,
+              border: `1px solid ${feedback === false ? "#ff6b6b" : "#ccc"}`,
+              borderRadius: "4px",
+              outline: "none",
+              transition: "border-color 0.2s ease-in-out",
+            }}
+          />
+        </form>
       )}
     </>
   );

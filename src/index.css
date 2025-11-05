@@ -27,6 +27,7 @@ a:hover {
 }
 
 body {
+  background: url('/background.png') center/cover fixed no-repeat;
   margin: 0;
   display: flex;
   place-items: center;
