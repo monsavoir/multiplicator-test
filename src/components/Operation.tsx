@@ -1,7 +1,29 @@
-import { useState, useRef, useEffect, type FormEvent, type KeyboardEvent, type ChangeEvent, type JSX } from "react";
+import {
+  useState,
+  useRef,
+  useEffect,
+  type FormEvent,
+  type KeyboardEvent,
+  type ChangeEvent,
+  type JSX,
+} from "react";
 import "./Operation.css";
+import Confetti from "./Confetti";
+import type { GameMode } from "../types/GameMode";
 
-export default function Operation(): JSX.Element {
+interface OperationProps {
+  gameMode: GameMode;
+}
+
+function isClassicMode(mode: GameMode): mode is "classic" {
+  return mode === "classic";
+}
+
+function isSurvieMode(mode: GameMode): mode is "survie" {
+  return mode === "survie";
+}
+
+export default function Operation({ gameMode }: OperationProps): JSX.Element {
   const [answer, setAnswer] = useState("");
   const [feedback, setFeedback] = useState<boolean | null>(null);
   const [wrongAttempts, setWrongAttempts] = useState(0);
@@ -9,10 +31,56 @@ export default function Operation(): JSX.Element {
   const [score, setScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(5);
+  const [timeNow, setTimeNow] = useState(Date.now());
 
-  const [a, setA] = useState(() => Math.floor(Math.random() * 10));
-  const [b, setB] = useState(() => Math.floor(Math.random() * 10));
+  // Function to generate all possible pairs and shuffle them
+  function generatePairs() {
+    const pairs: Array<[number, number]> = [];
+    for (let i = 2; i <= 3; i++) {
+      for (let j = i; j <= 3; j++) {
+        pairs.push([i, j]);
+      }
+    }
+    console.log("Generated pairs:", pairs);
+    console.log(pairs.length);
+    return shuffleArray(pairs);
+  }
+
+  // Fisher-Yates shuffle algorithm
+  function shuffleArray<T>(array: T[]): T[] {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  }
+
+  const [remainingPairs, setRemainingPairs] = useState<Array<[number, number]>>(
+    () => {
+      if (isClassicMode(gameMode)) {
+        return generatePairs();
+      }
+      return [];
+    }
+  );
+
+  const [a, setA] = useState(() => {
+    if (isClassicMode(gameMode) && remainingPairs.length > 0) {
+      return remainingPairs[0][0];
+    }
+    return isSurvieMode(gameMode) ? Math.floor(Math.random() * 8) + 2 : 0;
+  });
+
+  const [b, setB] = useState(() => {
+    if (isClassicMode(gameMode) && remainingPairs.length > 0) {
+      return remainingPairs[0][1];
+    }
+    return isSurvieMode(gameMode) ? Math.floor(Math.random() * 8) + 2 : 0;
+  });
+
   const correct = a * b;
+
   const inputRef = useRef<HTMLInputElement>(null);
   const timeoutRef = useRef(false);
 
@@ -32,27 +100,47 @@ export default function Operation(): JSX.Element {
 
     if (isCorrect) {
       setScore((prev) => prev + 1);
-      setSecondsLeft(5);
-    } else {
-      setWrongAttempts((prev) => prev + 1);
-
-      const newLives = Math.max(0, lives - 1);
-      setLives(newLives);
-      if (newLives === 0) {
-        setGameOver(true);
-      } else {
-        setTimeout(() => {
-          if (inputRef.current) inputRef.current.focus();
-        }, 50);
+      if (isSurvieMode(gameMode)) {
         setSecondsLeft(5);
       }
+    } else {
+      if (isSurvieMode(gameMode)) {
+        setWrongAttempts((prev) => prev + 1);
+        const newLives = Math.max(0, lives - 1);
+        setLives(newLives);
+        if (newLives === 0) {
+          setGameOver(true);
+        }
+        setSecondsLeft(5);
+      }
+      // Reset focus regardless of mode
+      setTimeout(() => {
+        if (inputRef.current) inputRef.current.focus();
+      }, 50);
     }
 
     setAnswer("");
 
     if (isCorrect && !gameOver) {
-      setA(() => Math.floor(Math.random() * 10));
-      setB(() => Math.floor(Math.random() * 10));
+      if (isClassicMode(gameMode)) {
+        // Remove the current pair and get the next one
+        const newPairs = remainingPairs.slice(1);
+        setRemainingPairs(newPairs);
+
+        // If we've used all pairs, game is complete
+        if (newPairs.length === 0) {
+          setGameOver(true);
+          return;
+        }
+
+        // Set the next pair
+        setA(newPairs[0][0]);
+        setB(newPairs[0][1]);
+      } else {
+        // Survival mode random numbers
+        setA(() => Math.floor(Math.random() * 8) + 2);
+        setB(() => Math.floor(Math.random() * 8) + 2);
+      }
       setFeedback(null);
       setSecondsLeft(5);
       if (inputRef.current) inputRef.current.focus();
@@ -61,25 +149,41 @@ export default function Operation(): JSX.Element {
 
   // handle countdown timer
   useEffect(() => {
-    if (gameOver) return;
+    if (gameOver || gameMode !== "survie") return;
 
     const interval = setInterval(() => {
       setSecondsLeft((s) => {
         if (s <= 1) {
           if (timeoutRef.current) return 5;
           timeoutRef.current = true;
-          setWrongAttempts((w) => w + 1);
           setFeedback(false);
           setAnswer("");
-          setLives((prev) => {
-            const newLives = Math.max(0, prev - 1);
-            if (newLives === 0) setGameOver(true);
-            return newLives;
-          });
+
+          if (isSurvieMode(gameMode)) {
+            setWrongAttempts((w) => w + 1);
+            setLives((prev) => {
+              const newLives = Math.max(0, prev - 1);
+              if (newLives === 0) setGameOver(true);
+              return newLives;
+            });
+          }
 
           setTimeout(() => {
-            setA(() => Math.floor(Math.random() * 10));
-            setB(() => Math.floor(Math.random() * 10));
+            if (isClassicMode(gameMode)) {
+              const newPairs = remainingPairs.slice(1);
+              setRemainingPairs(newPairs);
+
+              if (newPairs.length === 0) {
+                setGameOver(true);
+                return;
+              }
+
+              setA(newPairs[0][0]);
+              setB(newPairs[0][1]);
+            } else {
+              setA(() => Math.floor(Math.random() * 8) + 2);
+              setB(() => Math.floor(Math.random() * 8) + 2);
+            }
             setFeedback(null);
             setSecondsLeft(5);
             if (inputRef.current) inputRef.current.focus();
@@ -100,15 +204,6 @@ export default function Operation(): JSX.Element {
     <>
       {!gameOver && (
         <>
-          <div className="timer-row">
-            <div className="timer-bar" aria-hidden>
-              <div
-                className="timer-fill"
-                style={{ width: `${(secondsLeft / 5) * 100}%` }}
-              />
-            </div>
-          </div>
-
           <div
             style={{
               display: "flex",
@@ -118,24 +213,40 @@ export default function Operation(): JSX.Element {
               justifyContent: "space-between",
             }}
           >
-            <div style={{ display: "flex", gap: 8 }}>
-              {[...Array(3 - wrongAttempts)].map((_, i) => (
-                <span
-                  key={i}
-                  style={{
-                    color: i < lives ? "red" : "#ccc",
-                    fontSize: "24px",
-                  }}
-                >
-                  <img
-                    src="heart.png"
-                    alt="heart"
-                    style={{ width: "20px", height: "20px" }}
-                  />
-                </span>
-              ))}
+            {isSurvieMode(gameMode) && (
+              <>
+                <div className="timer-row">
+                  <div className="timer-bar" aria-hidden>
+                    <div
+                      className="timer-fill"
+                      style={{ width: `${(secondsLeft / 5) * 100}%` }}
+                    />
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {[...Array(3 - wrongAttempts)].map((_, i) => (
+                    <span
+                      key={i}
+                      style={{
+                        color: i < lives ? "red" : "#ccc",
+                        fontSize: "24px",
+                      }}
+                    >
+                      <img
+                        src="heart.png"
+                        alt="heart"
+                        style={{ width: "20px", height: "20px" }}
+                      />
+                    </span>
+                  ))}
+                </div>
+              </>
+            )}
+            <div style={{ fontSize: 18 }}>
+              {isClassicMode(gameMode)
+                ? `Restant: ${score}/${remainingPairs.length + score}`
+                : `Score: ${score}`}
             </div>
-            <div style={{ fontSize: 18 }}>Score: {score}</div>
           </div>
         </>
       )}
@@ -150,8 +261,24 @@ export default function Operation(): JSX.Element {
             marginBottom: "16px",
           }}
         >
-          <h2>Game Over!</h2>
-          <p>Score Final: {score}</p>
+          {isClassicMode(gameMode) && remainingPairs.length === 0 ? (
+            <>
+              <Confetti />
+              <h2 className="text-2xl font-bold mb-4">
+                Félicitations! Tu as complété le mode Classique! 🎉
+              </h2>
+              <p className="text-lg mb-4">
+                Tu as mis : {Math.round((Date.now() - timeNow) / 100) / 10}{" "}
+                secondes
+              </p>
+            </>
+          ) : (
+            <>
+              <h2>Game Over!</h2>
+              <p>Score Final: {score}</p>
+            </>
+          )}
+
           <button
             onClick={() => {
               setLives(3);
@@ -159,8 +286,17 @@ export default function Operation(): JSX.Element {
               setScore(0);
               setGameOver(false);
               setFeedback(null);
-              setA(Math.floor(Math.random() * 10));
-              setB(Math.floor(Math.random() * 10));
+              setTimeNow(Date.now());
+
+              if (isClassicMode(gameMode)) {
+                const newPairs = generatePairs();
+                setRemainingPairs(newPairs);
+                setA(newPairs[0][0]);
+                setB(newPairs[0][1]);
+              } else {
+                setA(Math.floor(Math.random() * 8) + 2);
+                setB(Math.floor(Math.random() * 8) + 2);
+              }
             }}
             style={{
               padding: "8px 16px",
@@ -175,50 +311,68 @@ export default function Operation(): JSX.Element {
           >
             Rejouer
           </button>
+          <button
+            onClick={() => {
+              window.location.reload();
+            }}
+            style={{
+              padding: "8px 16px",
+              fontSize: "16px",
+              borderRadius: "4px",
+              backgroundColor: "#2196F3",
+              color: "white",
+              border: "none",
+              cursor: "pointer",
+              marginTop: "10px",
+            }}
+          >
+            Retour au menu
+          </button>
         </div>
       ) : (
-        <form
-          onSubmit={handleSubmit}
-          style={{ display: "flex", gap: 8, alignItems: "center" }}
-        >
-          <span style={{ fontSize: 18 }}>
-            {a} × {b} =
-          </span>
+        <div>
+          <form
+            onSubmit={handleSubmit}
+            style={{ display: "flex", gap: 8, alignItems: "center" }}
+          >
+            <span style={{ fontSize: 18 }}>
+              {a} × {b} =
+            </span>
 
-          <input
-            key={`input-${wrongAttempts}`}
-            name="answer"
-            value={answer}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => setAnswer(e.target.value)}
-            ref={inputRef}
-            onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                handleSubmit(e as any as FormEvent<HTMLFormElement>);
+            <input
+              key={`input-${wrongAttempts}`}
+              name="answer"
+              value={answer}
+              onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                setAnswer(e.target.value)
               }
-            }}
-            inputMode="numeric"
-            type="tel"
-            pattern="[0-9]*"
-            aria-label={`Answer for ${a} times ${b}`}
-            className={
-              feedback === false
-                ? "input-shake"
-                : feedback === true
-                ? "input-success"
-                : ""
-            }
-            style={{
-              padding: "6px 8px",
-              fontSize: 16,
-              width: 100,
-              marginLeft: 12,
-              border: "1px solid #ccc",
-              borderRadius: "4px",
-              outline: "none",
-            }}
-          />
-        </form>
+              ref={inputRef}
+              onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleSubmit(e as any as FormEvent<HTMLFormElement>);
+                }
+              }}
+              inputMode="numeric"
+              type="tel"
+              pattern="[0-9]*"
+              aria-label={`Answer for ${a} times ${b}`}
+              className={
+                gameMode === "survie" && feedback === false ? "input-shake" : ""
+              }
+              style={{
+                padding: "6px 8px",
+                fontSize: 16,
+                width: 100,
+                marginLeft: 12,
+                border: `1px solid ${feedback === false ? "#ff6b6b" : "#ccc"}`,
+                borderRadius: "4px",
+                outline: "none",
+                transition: "border-color 0.2s ease-in-out",
+              }}
+            />
+          </form>
+        </div>
       )}
     </>
   );
