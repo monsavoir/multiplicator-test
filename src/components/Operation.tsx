@@ -36,8 +36,8 @@ export default function Operation({ gameMode }: OperationProps): JSX.Element {
   // Function to generate all possible pairs and shuffle them
   function generatePairs() {
     const pairs: Array<[number, number]> = [];
-    for (let i = 2; i <= 3; i++) {
-      for (let j = i; j <= 3; j++) {
+    for (let i = 2; i <= 9; i++) {
+      for (let j = i; j <= 9; j++) {
         pairs.push([i, j]);
       }
     }
