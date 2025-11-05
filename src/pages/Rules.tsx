@@ -11,22 +11,28 @@ export default function Rules({ gameMode }: RulesProps): JSX.Element {
 
   return (
     <div className="flex flex-col justify-between">
-      <main className="container mx-auto">
+      <main
+        className={`container mx-auto ${
+          play
+            ? "min-h-screen flex flex-col justify-center overflow-hidden"
+            : ""
+        }`}
+        style={play ? { touchAction: "none" } : undefined}
+      >
         {!play && (
           <div className="flex flex-col gap-4">
+            <h1>Règles du jeu</h1>
             {gameMode === "classic" && (
               <>
-                <h1>Mode Classique</h1>
                 <p>
                   Dans ce mode, le but est de répondre le plus rapidement
                   possible à chaque question. Toutes les combinaisons
-                  n'apparaitront qu'une fois
+                  n'apparaitront qu'une fois.
                 </p>
               </>
             )}
             {gameMode === "survie" && (
               <>
-                <h1>Mode Survie</h1>
                 <p>
                   Dans ce mode, les questions sont infinies. Vous commencez avec
                   3 vies et perdez une vie à chaque mauvaise réponse. Le jeu se
