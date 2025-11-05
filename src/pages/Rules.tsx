@@ -10,11 +10,11 @@ export default function Rules({ gameMode }: RulesProps): JSX.Element {
   const [play, setPlay] = useState(false);
 
   return (
-    <div className="flex flex-col justify-between">
+    <div className="flex flex-col justify-between align-items-flex-start">
       <main
         className={`container mx-auto ${
           play
-            ? "min-h-screen flex flex-col justify-center overflow-hidden"
+            ? "min-h-screen flex flex-col justify-start overflow-hidden pt-8"
             : ""
         }`}
         style={play ? { touchAction: "none" } : undefined}

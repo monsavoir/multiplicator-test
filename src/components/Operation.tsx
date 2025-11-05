@@ -10,6 +10,7 @@ import type { JSX } from "react";
 import "./Operation.css";
 import Confetti from "./Confetti";
 import type { GameMode } from "../types/GameMode";
+import heartIcon from "../assets/heart.png";
 
 interface OperationProps {
   gameMode: GameMode;
@@ -202,7 +203,7 @@ export default function Operation({ gameMode }: OperationProps): JSX.Element {
                 {[...Array(lives)].map((_, i) => (
                   <img
                     key={i}
-                    src="heart.png"
+                    src={heartIcon}
                     alt="vie"
                     width={22}
                     height={22}
@@ -216,7 +217,7 @@ export default function Operation({ gameMode }: OperationProps): JSX.Element {
             </div>
           </div>
         ) : (
-          <div style={{ marginBottom: 20, fontSize: 16, fontWeight: 600 }}>
+          <div style={{ marginBottom: 12, fontSize: 16, fontWeight: 600 }}>
             Progression: {score}/{remainingPairs.length + score}
           </div>
         ))}
@@ -225,10 +226,10 @@ export default function Operation({ gameMode }: OperationProps): JSX.Element {
         <div
           style={{
             textAlign: "center",
-            padding: "20px",
+            padding: "16px",
             border: "2px solid #ccc",
             borderRadius: "8px",
-            marginBottom: "16px",
+            marginBottom: "12px",
           }}
         >
           {isClassicMode(gameMode) && remainingPairs.length === 0 ? (
@@ -274,7 +275,8 @@ export default function Operation({ gameMode }: OperationProps): JSX.Element {
               color: "white",
               border: "none",
               cursor: "pointer",
-              marginTop: "10px",
+              marginTop: "8px",
+              marginRight: "8px",
             }}
           >
             Rejouer
@@ -289,7 +291,7 @@ export default function Operation({ gameMode }: OperationProps): JSX.Element {
               color: "white",
               border: "none",
               cursor: "pointer",
-              marginTop: "10px",
+              marginTop: "8px",
             }}
           >
             Retour au menu

@@ -8,8 +8,8 @@ export default function Home() {
 
   return (
     <div className="flex flex-col justify-between">
-      <main className="container mx-auto px-4 py-8">
-        <div className="flex flex-col gap-4">
+      <main className="container mx-auto px-4 py-2">
+        <div className="flex flex-col gap-3">
           {!gameMode && (
             <>
               <h1>Math Quiz</h1>

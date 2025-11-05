@@ -27,17 +27,19 @@ a:hover {
 }
 
 body {
-  background: url('background.png') center/cover fixed no-repeat;
+  background: url('assets/background.png') center/cover fixed no-repeat;
   margin: 0;
   display: flex;
-  place-items: center;
+  align-items: flex-start;
   min-width: 320px;
   min-height: 100vh;
+  padding-top: 1vh;
 }
 
 h1 {
-  font-size: 3.2em;
+  font-size: 2.5em;
   line-height: 1.1;
+  margin: 0.5em 0;
 }
 
 button {
