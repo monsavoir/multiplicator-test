@@ -1,4 +1,3 @@
-import Operation from "../components/Operation";
 import Rules from "./Rules";
 import "../App.css";
 import { useState } from "react";
